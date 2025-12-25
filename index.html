@@ -1,293 +1,465 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Blox Fruits – Free Fruit Drop Alert</title>
-  <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background: #0b1220; color: #e8eefc; }
-    .wrap { max-width: 820px; margin: 0 auto; padding: 22px; }
-    .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
-            border-radius: 16px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
-    h1 { font-size: 22px; margin: 0 0 8px; }
-    .sub { opacity: 0.85; margin: 0 0 14px; line-height: 1.4; }
-    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    @media (min-width: 760px){ .grid { grid-template-columns: 1fr 1fr; } }
-    .big { font-size: 34px; font-weight: 800; letter-spacing: 0.2px; }
-    .label { opacity: 0.75; font-size: 13px; margin-top: 6px; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    button {
-      background: #2A7FFF; color: white; border: 0; border-radius: 12px;
-      padding: 10px 14px; font-weight: 700; cursor: pointer;
-    }
-    button.secondary { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.18); }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .pill {
-      display: inline-flex; gap: 8px; align-items: center;
-      padding: 8px 10px; border-radius: 999px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      font-size: 13px; opacity: 0.9;
-    }
-    ul { margin: 10px 0 0; padding-left: 18px; }
-    li { margin: 6px 0; opacity: 0.92; }
-    .ok { color: #8CFFB1; font-weight: 700; }
-    .warn { color: #FFD18C; font-weight: 700; }
-    .footer { margin-top: 14px; font-size: 12px; opacity: 0.75; line-height: 1.45; }
-    code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 8px; }
-    select { border-radius:10px; padding:6px 8px; border:1px solid rgba(255,255,255,0.18);
-             background: rgba(0,0,0,0.15); color:#e8eefc; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holiday Fruit Event Tracker - The Blox Brain</title>
+    <meta name="description" content="Track the Holiday Fruit Event drops with countdowns and alerts. Created by The Blox Brain.">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent: #ef4444; /* Holiday Red */
+            --accent-glow: rgba(239, 68, 68, 0.5);
+            --success: #22c55e;
+            --warning: #eab308;
+            --channel-color: #38bdf8; /* Light Blue for channel name */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Snow/Star Background Effect */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: 
+                radial-gradient(white 1px, transparent 1px),
+                radial-gradient(white 1px, transparent 1px);
+            background-size: 50px 50px, 100px 100px;
+            background-position: 0 0, 25px 25px;
+            opacity: 0.1;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem 1rem;
+            width: 100%;
+            background: linear-gradient(180deg, rgba(30,41,59,0.8) 0%, transparent 100%);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent-glow);
+            line-height: 1.2;
+        }
+
+        .channel-name {
+            display: block;
+            font-size: 1rem;
+            color: var(--channel-color);
+            margin-top: 0.5rem;
+            font-weight: normal;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            padding-bottom: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255,255,255,0.05);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Countdown Styles */
+        .timer-display {
+            font-size: 4rem;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-main);
+            margin: 1rem 0;
+            line-height: 1;
+        }
+
+        .timer-label {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .next-drop-time {
+            font-size: 1.5rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+        }
+
+        button.secondary {
+            background-color: #334155;
+        }
+
+        select {
+            background-color: #334155;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* Status Banner */
+        #status-banner {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            display: none;
+            animation: pulse 2s infinite;
+        }
+
+        .status-warning {
+            background-color: rgba(234, 179, 8, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+        }
+
+        .status-alert {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        /* Locations List */
+        .locations {
+            text-align: left;
+        }
+        
+        .locations h3 {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+
+        .loc-item {
+            margin-bottom: 1rem;
+        }
+        .loc-sea {
+            color: var(--warning);
+            font-weight: bold;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .timer-display { font-size: 3rem; }
+            h1 { font-size: 2rem; }
+            .channel-name { font-size: 0.9rem; }
+        }
+    </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <h1>🎁 Blox Fruits Free Fruit Drop Alert</h1>
-    <p class="sub">
-      Drops happen every hour at <b>xx:00 UAE time</b> (<code>Asia/Dubai</code>).
-      This page converts it to <b>your local time</b> and alerts you <b>3 minutes before</b>.
-    </p>
 
-    <div class="row" style="margin-bottom:12px;">
-      <span class="pill">Your timezone: <b id="tzLocal">—</b></span>
-      <span class="pill">UAE timezone: <b>Asia/Dubai</b></span>
-      <span class="pill">Alert status: <b id="alertStatus" class="warn">OFF</b></span>
+    <div class="background"></div>
+
+    <header>
+        <h1>🎁 Holiday Fruit Tracker</h1>
+        <span class="channel-name">By The Blox Brain</span>
+        <div class="subtitle">Next Drop In Your Local Timezone</div>
+    </header>
+
+    <div class="container">
+        
+        <!-- Status Banner for Warnings -->
+        <div id="status-banner"></div>
+
+        <!-- Main Timer Card -->
+        <div class="card">
+            <div class="timer-label">Time Until Next Drop</div>
+            <div class="timer-display" id="countdown">00:00:00</div>
+            
+            <div class="timer-label">Next Drop At</div>
+            <div class="next-drop-time" id="drop-time">--:--</div>
+
+            <div class="controls">
+                <button id="btn-enable-sound">🔔 Enable Alerts</button>
+                <select id="interval-select">
+                    <option value="1">Every 1 Hour (Current)</option>
+                    <option value="2">Every 2 Hours (Tomorrow)</option>
+                    <option value="3">Every 3 Hours</option>
+                    <option value="4">Every 4 Hours</option>
+                </select>
+            </div>
+            <p style="font-size: 0.8rem; color: #64748b; margin-top: 1rem;">
+                *Times are automatically converted to your local timezone (e.g., IST, EST).
+            </p>
+        </div>
+
+        <!-- Locations Guide -->
+        <div class="card locations">
+            <h3>📍 Where to Find the Giftbox</h3>
+            
+            <div class="loc-item">
+                <span class="loc-sea">First Sea 🌊</span>
+                Look for the island between the <strong>Colosseum</strong> and <strong>Frozen Village</strong>.
+            </div>
+
+            <div class="loc-item">
+                <span class="loc-sea">Second Sea 🚢</span>
+                Located on the left side of <strong>Graveyard Island</strong>.
+            </div>
+
+            <div class="loc-item">
+                <span class="loc-sea">Third Sea ⚓</span>
+                Found at the <strong>North Pole</strong> in the Sea of Treats.
+            </div>
+            
+            <div style="margin-top: 1rem; font-size: 0.9rem; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                Stand on the center platform to claim your free fruit!
+            </div>
+        </div>
+
     </div>
 
-    <div class="grid">
-      <div class="card" style="background: rgba(255,255,255,0.04);">
-        <div class="big" id="countdown">—</div>
-        <div class="label">Time until next drop</div>
-      </div>
-      <div class="card" style="background: rgba(255,255,255,0.04);">
-        <div class="big" id="nextLocal">—</div>
-        <div class="label">Next drop time (your local time)</div>
-      </div>
-    </div>
+    <script>
+        // Configuration
+        let intervalHours = 1; // Default to 1 hour
+        let soundEnabled = false;
+        let warningTriggered = false;
+        let dropTriggered = false;
 
-    <div class="row" style="margin-top:14px;">
-      <button id="enableBtn">Enable alerts</button>
-      <button id="testBtn" class="secondary" disabled>Test alert</button>
-      <button id="muteBtn" class="secondary">Sound: ON</button>
+        // Elements
+        const countdownEl = document.getElementById('countdown');
+        const dropTimeEl = document.getElementById('drop-time');
+        const intervalSelect = document.getElementById('interval-select');
+        const soundBtn = document.getElementById('btn-enable-sound');
+        const banner = document.getElementById('status-banner');
 
-      <span class="pill">
-        Interval:
-        <select id="intervalSel">
-          <option value="60">Every 1 hour</option>
-          <option value="120">Every 2 hours</option>
-          <option value="180">Every 3 hours</option>
-        </select>
-      </span>
-    </div>
+        // Audio Context (Synthesized beep to avoid external files)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    <div class="card" style="background: rgba(255,255,255,0.04); margin-top:14px;">
-      <div style="font-weight:800;">Next 5 drop times (your local time)</div>
-      <ul id="nextList"></ul>
-      <div class="footer">
-        Notifications require you to click <b>Enable alerts</b> once (browser rule).
-        Keep this tab open for guaranteed alerts. If you close the tab, alerts may stop.
-      </div>
-    </div>
-  </div>
-</div>
+        function playBeep(type) {
+            if (!soundEnabled) return;
+            
+            // Resume context if suspended (browser policy)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
 
-<script>
-  // ---------- SETTINGS ----------
-  const DUBAI_TZ = "Asia/Dubai";
-  const DUBAI_OFFSET_MIN = 4 * 60;  // UAE is UTC+4, no DST
-  const ALERT_LEAD_MIN = 3;         // ✅ Alert 3 minutes before drop
-  let soundOn = true;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
 
-  // ---------- ELEMENTS ----------
-  const tzLocalEl = document.getElementById("tzLocal");
-  const countdownEl = document.getElementById("countdown");
-  const nextLocalEl = document.getElementById("nextLocal");
-  const nextListEl = document.getElementById("nextList");
-  const alertStatusEl = document.getElementById("alertStatus");
-  const enableBtn = document.getElementById("enableBtn");
-  const testBtn = document.getElementById("testBtn");
-  const muteBtn = document.getElementById("muteBtn");
-  const intervalSel = document.getElementById("intervalSel");
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
 
-  tzLocalEl.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "Your timezone";
+            if (type === 'warning') {
+                // High pitch short beeps for warning
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'drop') {
+                // Fanfare-ish sequence
+                oscillator.type = 'triangle';
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.2); // E5
+                oscillator.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.4); // G5
+                
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.4);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 1.5);
+            }
+        }
 
-  // ---------- HELPERS ----------
-  function pad2(n){ return String(n).padStart(2, "0"); }
-  function formatLocal(dt){
-    return dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  }
-  function formatLocalFull(dt){
-    return dt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
-  }
+        // Toggle Sound
+        soundBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            // Try to resume audio context immediately on user gesture
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            soundBtn.textContent = soundEnabled ? "🔊 Alerts On" : "🔔 Enable Alerts";
+            soundBtn.classList.toggle('secondary', !soundEnabled);
+            
+            if(soundEnabled) {
+                // Test sound
+                playBeep('warning');
+            }
+        });
 
-  // Convert local now -> "Dubai wall clock ms"
-  function nowDubaiMs(){
-    const now = new Date();
-    const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000;
-    return utcMs + DUBAI_OFFSET_MIN * 60_000;
-  }
+        // Change Interval
+        intervalSelect.addEventListener('change', (e) => {
+            intervalHours = parseInt(e.target.value);
+            // Reset triggers when changing interval to avoid stale alerts
+            warningTriggered = false;
+            dropTriggered = false;
+            updateTimer();
+        });
 
-  // Convert Dubai wall clock ms -> local Date
-  function dubaiMsToLocalDate(dubaiMs){
-    const utcMs = dubaiMs - DUBAI_OFFSET_MIN * 60_000;
-    return new Date(utcMs);
-  }
+        function getNextDropTime() {
+            const now = new Date();
+            
+            // LOGIC UPDATE: Use UTC (Server Time) to align drops.
+            // This ensures that for offset timezones (like India +5:30), the :30 is handled automatically.
+            
+            // Create a date object for calculation, starting at "now"
+            let d = new Date(now);
+            
+            // 1. Reset minutes/seconds/ms to the top of the hour (UTC)
+            d.setUTCMinutes(0);
+            d.setUTCSeconds(0);
+            d.setUTCMilliseconds(0);
+            
+            // 2. Align to interval (e.g. if interval is 2, ensure we are on even UTC hours)
+            // This aligns to 0, 2, 4, 6... UTC.
+            let remainder = d.getUTCHours() % intervalHours;
+            d.setUTCHours(d.getUTCHours() - remainder);
+            
+            // 3. Keep adding intervals until we are in the future
+            while (d <= now) {
+                d.setUTCHours(d.getUTCHours() + intervalHours);
+            }
+            
+            return d;
+        }
 
-  function getNextDropDubaiMs(intervalMinutes){
-    const dubaiMs = nowDubaiMs();
-    const d = new Date(dubaiMs);
-    const minutes = d.getMinutes();
-    const seconds = d.getSeconds();
-    const ms = d.getMilliseconds();
+        function updateTimer() {
+            const now = new Date();
+            const target = getNextDropTime();
+            const diff = target - now;
 
-    let next = new Date(dubaiMs);
+            // Update Next Drop Time Text
+            // This automatically converts the UTC calculated target to the USER'S browser timezone
+            const timeOptions = { hour: 'numeric', minute: '2-digit' };
+            dropTimeEl.textContent = target.toLocaleTimeString([], timeOptions);
 
-    // Go to next top-of-hour if not exactly at :00
-    if (minutes !== 0 || seconds !== 0 || ms !== 0){
-      next.setMinutes(0, 0, 0);
-      next.setHours(next.getHours() + 1);
-    } else {
-      // Exactly at xx:00 — keep as now (drop is live)
-      next = new Date(dubaiMs);
-    }
+            // Calculate H M S remaining
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-    const intervalHours = Math.max(1, Math.round(intervalMinutes / 60));
-    if (intervalHours > 1){
-      while ((next.getHours() % intervalHours) !== 0){
-        next.setHours(next.getHours() + 1);
-      }
-    }
-    next.setMinutes(0,0,0);
-    return next.getTime();
-  }
+            // Display
+            countdownEl.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // --- ALERT LOGIC ---
+            
+            // 1. Warning: 3 minutes before (diff is between 3m and 2m59s)
+            // 'minutes' variable holds the remaining minutes. 
+            // So if minutes is 3, time is between 3:00 and 3:59? No, diff calculation floor logic:
+            // 180,000ms = 3 minutes exactly.
+            // 179,999ms = 2 minutes, 59 seconds.
+            
+            // We want to trigger AS SOON as it hits 3:00 remaining or slightly under.
+            // Let's use raw 'diff' for precision.
+            
+            // Trigger range: Between 2:58 and 3:02 remaining to ensure we catch it
+            const threeMinMs = 3 * 60 * 1000;
+            
+            if (diff <= threeMinMs && diff > (threeMinMs - 2000)) { 
+                // 2 second window to trigger alert
+                 if (!warningTriggered) {
+                     showBanner("⚠️ GET READY! Drop in 3 minutes! Log in now!", "warning");
+                     playBeep('warning');
+                     warningTriggered = true;
+                 }
+            } else {
+                // Reset trigger if we are far away (e.g. more than 4 mins)
+                if (diff > (threeMinMs + 5000)) warningTriggered = false; 
+            }
 
-  function buildNextList(intervalMinutes){
-    nextListEl.innerHTML = "";
-    let nextDubai = getNextDropDubaiMs(intervalMinutes);
-    for (let i=0; i<5; i++){
-      const localDate = dubaiMsToLocalDate(nextDubai);
-      const li = document.createElement("li");
-      li.textContent = formatLocalFull(localDate);
-      nextListEl.appendChild(li);
-      nextDubai += intervalMinutes * 60_000;
-    }
-  }
+            // 2. Drop Now (When hours=0, mins=0, secs=0)
+            if (diff <= 1000 && diff >= 0) {
+                if (!dropTriggered) {
+                    showBanner("🎁 FRUIT DROPPING NOW! GO GO GO!", "alert");
+                    playBeep('drop');
+                    dropTriggered = true;
+                }
+            } else {
+                if (diff > 5000) dropTriggered = false; // Reset if > 5 seconds remaining
+            }
+        }
 
-  function updateUI(){
-    const intervalMinutes = parseInt(intervalSel.value, 10);
-    const nextDubaiMs = getNextDropDubaiMs(intervalMinutes);
-    const nextLocal = dubaiMsToLocalDate(nextDubaiMs);
+        function showBanner(msg, type) {
+            banner.textContent = msg;
+            banner.className = ''; // reset
+            banner.classList.add(type === 'warning' ? 'status-warning' : 'status-alert');
+            banner.style.display = 'block';
+            
+            // Hide after 10 seconds
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 10000);
+        }
 
-    nextLocalEl.textContent = formatLocal(nextLocal);
+        // Initialize
+        setInterval(updateTimer, 1000);
+        updateTimer();
 
-    const diff = nextLocal.getTime() - Date.now();
-    if (diff <= 0 && diff > -1500){
-      countdownEl.textContent = "NOW";
-    } else {
-      const t = Math.max(0, diff);
-      const totalSec = Math.floor(t / 1000);
-      const hh = Math.floor(totalSec / 3600);
-      const mm = Math.floor((totalSec % 3600) / 60);
-      const ss = totalSec % 60;
-      countdownEl.textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
-    }
-
-    buildNextList(intervalMinutes);
-  }
-
-  // ---------- SOUND ----------
-  function beep(){
-    if (!soundOn) return;
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = 880;
-      g.gain.value = 0.06;
-      o.connect(g); g.connect(ctx.destination);
-      o.start();
-      setTimeout(() => { o.stop(); ctx.close(); }, 180);
-    } catch (e) {}
-  }
-
-  // ---------- ALERTS ----------
-  let alertEnabled = false;
-  let timerId = null;
-  let lastFiredKey = null;
-
-  function sendNotification(){
-    beep();
-    if (Notification.permission === "granted"){
-      new Notification("⏰ Fruit Drop in 3 minutes!", {
-        body: "Get ready — claim your free fruit at xx:00 UAE time.",
-        silent: true
-      });
-    }
-  }
-
-  function scheduleNextAlert(){
-    clearTimeout(timerId);
-    if (!alertEnabled) return;
-
-    const intervalMinutes = parseInt(intervalSel.value, 10);
-    const nextDropDubaiMs = getNextDropDubaiMs(intervalMinutes);
-
-    // ✅ Alert time = drop time - 3 minutes (in Dubai wall clock)
-    const alertDubaiMs = nextDropDubaiMs - (ALERT_LEAD_MIN * 60_000);
-
-    // Convert alertDubaiMs to a local Date for correct timing
-    const alertLocal = dubaiMsToLocalDate(alertDubaiMs);
-
-    let waitMs = alertLocal.getTime() - Date.now();
-
-    // If user opens the page inside the 3-minute window, alert immediately once
-    if (waitMs < 0) waitMs = 0;
-
-    timerId = setTimeout(() => {
-      const key = String(nextDropDubaiMs) + ":" + intervalMinutes; // unique per drop
-      if (lastFiredKey !== key){
-        lastFiredKey = key;
-        sendNotification();
-      }
-      // After firing, schedule the next one
-      scheduleNextAlert();
-    }, waitMs + 300); // small buffer
-  }
-
-  enableBtn.addEventListener("click", async () => {
-    if (!("Notification" in window)){
-      alert("Your browser doesn’t support notifications. Use Chrome/Edge on PC/Android.");
-      return;
-    }
-    const perm = await Notification.requestPermission();
-    if (perm !== "granted"){
-      alert("Notification permission denied. You can still use the countdown.");
-      return;
-    }
-    alertEnabled = true;
-    alertStatusEl.textContent = "ON";
-    alertStatusEl.className = "ok";
-    testBtn.disabled = false;
-    scheduleNextAlert();
-  });
-
-  testBtn.addEventListener("click", () => sendNotification());
-
-  muteBtn.addEventListener("click", () => {
-    soundOn = !soundOn;
-    muteBtn.textContent = soundOn ? "Sound: ON" : "Sound: OFF";
-  });
-
-  intervalSel.addEventListener("change", () => {
-    updateUI();
-    scheduleNextAlert();
-  });
-
-  // ---------- START ----------
-  updateUI();
-  setInterval(updateUI, 250);
-</script>
+    </script>
 </body>
 </html>
