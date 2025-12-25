@@ -339,8 +339,12 @@
 
         function sendSystemNotification(title, body) {
             if (!soundEnabled) return; // Only send if alerts are enabled
-            if (Notification.permission === "granted") {
-                new Notification(title, { body: body, icon: '' });
+            try {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(title, { body: body, icon: '' });
+                }
+            } catch (e) {
+                console.error("System notification failed:", e);
             }
         }
 
@@ -348,37 +352,52 @@
         soundBtn.addEventListener('click', () => {
             soundEnabled = !soundEnabled;
             
-            // 1. Resume Audio Context (Browser Policy)
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-
-            if (soundEnabled) {
-                // 2. Handle Notifications
-                if (!("Notification" in window)) {
-                    alert("This browser does not support desktop notifications");
-                }
-                else if (Notification.permission === "granted") {
-                    // Already granted - send a test
-                    new Notification("Blox Fruit Alert", { body: "Notifications are working!" });
-                }
-                else if (Notification.permission !== "denied") {
-                    // Request permission
-                    Notification.requestPermission().then(permission => {
-                        if (permission === "granted") {
-                            new Notification("Blox Fruit Alert", { body: "Notifications enabled!" });
-                        }
-                    });
-                }
-                else {
-                    // Denied
-                    alert("Notifications are blocked! Please enable them in your browser address bar.");
-                }
-
-                // 3. Test Sound
-                playBeep('warning');
-            }
-
+            // 1. UPDATE UI IMMEDIATELY (Fixes the "stuck button" bug)
             soundBtn.textContent = soundEnabled ? "🔊 Alerts On" : "🔔 Enable Alerts";
             soundBtn.classList.toggle('secondary', !soundEnabled);
+
+            // 2. Resume Audio Context (Browser Policy)
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) { console.error("Audio resume error:", e); }
+
+            if (soundEnabled) {
+                // 3. Handle Notifications safely
+                try {
+                    if (!("Notification" in window)) {
+                        // Not supported
+                    }
+                    else if (Notification.permission === "granted") {
+                        // Already granted - send a test
+                        try {
+                            new Notification("Blox Fruit Alert", { body: "Notifications are working!" });
+                        } catch(err) {
+                            console.log("Notification failed (likely mobile restriction):", err);
+                        }
+                    }
+                    else if (Notification.permission !== "denied") {
+                        // Request permission
+                        Notification.requestPermission().then(permission => {
+                            if (permission === "granted") {
+                                try {
+                                    new Notification("Blox Fruit Alert", { body: "Notifications enabled!" });
+                                } catch(err) { console.log(err); }
+                            }
+                        });
+                    }
+                    else {
+                        // Denied
+                        alert("Notifications are blocked! Please enable them in your browser settings.");
+                    }
+                } catch (e) {
+                    console.error("Notification logic error:", e);
+                }
+
+                // 4. Test Sound
+                try {
+                    playBeep('warning');
+                } catch(e) { console.error("Sound error:", e); }
+            }
         });
 
         // Change Interval
