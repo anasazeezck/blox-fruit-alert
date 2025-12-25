@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Blox Fruits – Free Fruit Drop Alert</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #0b1220; color: #e8eefc; }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 22px; }
+    .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 16px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    .sub { opacity: 0.85; margin: 0 0 14px; line-height: 1.4; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 760px){ .grid { grid-template-columns: 1fr 1fr; } }
+    .big { font-size: 34px; font-weight: 800; letter-spacing: 0.2px; }
+    .label { opacity: 0.75; font-size: 13px; margin-top: 6px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button {
+      background: #2A7FFF; color: white; border: 0; border-radius: 12px;
+      padding: 10px 14px; font-weight: 700; cursor: pointer;
+    }
+    button.secondary { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.18); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .pill {
+      display: inline-flex; gap: 8px; align-items: center;
+      padding: 8px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 13px; opacity: 0.9;
+    }
+    ul { margin: 10px 0 0; padding-left: 18px; }
+    li { margin: 6px 0; opacity: 0.92; }
+    .ok { color: #8CFFB1; font-weight: 700; }
+    .warn { color: #FFD18C; font-weight: 700; }
+    .footer { margin-top: 14px; font-size: 12px; opacity: 0.75; line-height: 1.45; }
+    code { background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 8px; }
+    select { border-radius:10px; padding:6px 8px; border:1px solid rgba(255,255,255,0.18);
+             background: rgba(0,0,0,0.15); color:#e8eefc; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🎁 Blox Fruits Free Fruit Drop Alert</h1>
+    <p class="sub">
+      Drops happen every hour at <b>xx:00 UAE time</b> (<code>Asia/Dubai</code>).
+      This page converts it to <b>your local time</b> and alerts you <b>3 minutes before</b>.
+    </p>
+
+    <div class="row" style="margin-bottom:12px;">
+      <span class="pill">Your timezone: <b id="tzLocal">—</b></span>
+      <span class="pill">UAE timezone: <b>Asia/Dubai</b></span>
+      <span class="pill">Alert status: <b id="alertStatus" class="warn">OFF</b></span>
+    </div>
+
+    <div class="grid">
+      <div class="card" style="background: rgba(255,255,255,0.04);">
+        <div class="big" id="countdown">—</div>
+        <div class="label">Time until next drop</div>
+      </div>
+      <div class="card" style="background: rgba(255,255,255,0.04);">
+        <div class="big" id="nextLocal">—</div>
+        <div class="label">Next drop time (your local time)</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px;">
+      <button id="enableBtn">Enable alerts</button>
+      <button id="testBtn" class="secondary" disabled>Test alert</button>
+      <button id="muteBtn" class="secondary">Sound: ON</button>
+
+      <span class="pill">
+        Interval:
+        <select id="intervalSel">
+          <option value="60">Every 1 hour</option>
+          <option value="120">Every 2 hours</option>
+          <option value="180">Every 3 hours</option>
+        </select>
+      </span>
+    </div>
+
+    <div class="card" style="background: rgba(255,255,255,0.04); margin-top:14px;">
+      <div style="font-weight:800;">Next 5 drop times (your local time)</div>
+      <ul id="nextList"></ul>
+      <div class="footer">
+        Notifications require you to click <b>Enable alerts</b> once (browser rule).
+        Keep this tab open for guaranteed alerts. If you close the tab, alerts may stop.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- SETTINGS ----------
+  const DUBAI_TZ = "Asia/Dubai";
+  const DUBAI_OFFSET_MIN = 4 * 60;  // UAE is UTC+4, no DST
+  const ALERT_LEAD_MIN = 3;         // ✅ Alert 3 minutes before drop
+  let soundOn = true;
+
+  // ---------- ELEMENTS ----------
+  const tzLocalEl = document.getElementById("tzLocal");
+  const countdownEl = document.getElementById("countdown");
+  const nextLocalEl = document.getElementById("nextLocal");
+  const nextListEl = document.getElementById("nextList");
+  const alertStatusEl = document.getElementById("alertStatus");
+  const enableBtn = document.getElementById("enableBtn");
+  const testBtn = document.getElementById("testBtn");
+  const muteBtn = document.getElementById("muteBtn");
+  const intervalSel = document.getElementById("intervalSel");
+
+  tzLocalEl.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "Your timezone";
+
+  // ---------- HELPERS ----------
+  function pad2(n){ return String(n).padStart(2, "0"); }
+  function formatLocal(dt){
+    return dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  function formatLocalFull(dt){
+    return dt.toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  // Convert local now -> "Dubai wall clock ms"
+  function nowDubaiMs(){
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60_000;
+    return utcMs + DUBAI_OFFSET_MIN * 60_000;
+  }
+
+  // Convert Dubai wall clock ms -> local Date
+  function dubaiMsToLocalDate(dubaiMs){
+    const utcMs = dubaiMs - DUBAI_OFFSET_MIN * 60_000;
+    return new Date(utcMs);
+  }
+
+  function getNextDropDubaiMs(intervalMinutes){
+    const dubaiMs = nowDubaiMs();
+    const d = new Date(dubaiMs);
+    const minutes = d.getMinutes();
+    const seconds = d.getSeconds();
+    const ms = d.getMilliseconds();
+
+    let next = new Date(dubaiMs);
+
+    // Go to next top-of-hour if not exactly at :00
+    if (minutes !== 0 || seconds !== 0 || ms !== 0){
+      next.setMinutes(0, 0, 0);
+      next.setHours(next.getHours() + 1);
+    } else {
+      // Exactly at xx:00 — keep as now (drop is live)
+      next = new Date(dubaiMs);
+    }
+
+    const intervalHours = Math.max(1, Math.round(intervalMinutes / 60));
+    if (intervalHours > 1){
+      while ((next.getHours() % intervalHours) !== 0){
+        next.setHours(next.getHours() + 1);
+      }
+    }
+    next.setMinutes(0,0,0);
+    return next.getTime();
+  }
+
+  function buildNextList(intervalMinutes){
+    nextListEl.innerHTML = "";
+    let nextDubai = getNextDropDubaiMs(intervalMinutes);
+    for (let i=0; i<5; i++){
+      const localDate = dubaiMsToLocalDate(nextDubai);
+      const li = document.createElement("li");
+      li.textContent = formatLocalFull(localDate);
+      nextListEl.appendChild(li);
+      nextDubai += intervalMinutes * 60_000;
+    }
+  }
+
+  function updateUI(){
+    const intervalMinutes = parseInt(intervalSel.value, 10);
+    const nextDubaiMs = getNextDropDubaiMs(intervalMinutes);
+    const nextLocal = dubaiMsToLocalDate(nextDubaiMs);
+
+    nextLocalEl.textContent = formatLocal(nextLocal);
+
+    const diff = nextLocal.getTime() - Date.now();
+    if (diff <= 0 && diff > -1500){
+      countdownEl.textContent = "NOW";
+    } else {
+      const t = Math.max(0, diff);
+      const totalSec = Math.floor(t / 1000);
+      const hh = Math.floor(totalSec / 3600);
+      const mm = Math.floor((totalSec % 3600) / 60);
+      const ss = totalSec % 60;
+      countdownEl.textContent = `${pad2(hh)}:${pad2(mm)}:${pad2(ss)}`;
+    }
+
+    buildNextList(intervalMinutes);
+  }
+
+  // ---------- SOUND ----------
+  function beep(){
+    if (!soundOn) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 880;
+      g.gain.value = 0.06;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      setTimeout(() => { o.stop(); ctx.close(); }, 180);
+    } catch (e) {}
+  }
+
+  // ---------- ALERTS ----------
+  let alertEnabled = false;
+  let timerId = null;
+  let lastFiredKey = null;
+
+  function sendNotification(){
+    beep();
+    if (Notification.permission === "granted"){
+      new Notification("⏰ Fruit Drop in 3 minutes!", {
+        body: "Get ready — claim your free fruit at xx:00 UAE time.",
+        silent: true
+      });
+    }
+  }
+
+  function scheduleNextAlert(){
+    clearTimeout(timerId);
+    if (!alertEnabled) return;
+
+    const intervalMinutes = parseInt(intervalSel.value, 10);
+    const nextDropDubaiMs = getNextDropDubaiMs(intervalMinutes);
+
+    // ✅ Alert time = drop time - 3 minutes (in Dubai wall clock)
+    const alertDubaiMs = nextDropDubaiMs - (ALERT_LEAD_MIN * 60_000);
+
+    // Convert alertDubaiMs to a local Date for correct timing
+    const alertLocal = dubaiMsToLocalDate(alertDubaiMs);
+
+    let waitMs = alertLocal.getTime() - Date.now();
+
+    // If user opens the page inside the 3-minute window, alert immediately once
+    if (waitMs < 0) waitMs = 0;
+
+    timerId = setTimeout(() => {
+      const key = String(nextDropDubaiMs) + ":" + intervalMinutes; // unique per drop
+      if (lastFiredKey !== key){
+        lastFiredKey = key;
+        sendNotification();
+      }
+      // After firing, schedule the next one
+      scheduleNextAlert();
+    }, waitMs + 300); // small buffer
+  }
+
+  enableBtn.addEventListener("click", async () => {
+    if (!("Notification" in window)){
+      alert("Your browser doesn’t support notifications. Use Chrome/Edge on PC/Android.");
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted"){
+      alert("Notification permission denied. You can still use the countdown.");
+      return;
+    }
+    alertEnabled = true;
+    alertStatusEl.textContent = "ON";
+    alertStatusEl.className = "ok";
+    testBtn.disabled = false;
+    scheduleNextAlert();
+  });
+
+  testBtn.addEventListener("click", () => sendNotification());
+
+  muteBtn.addEventListener("click", () => {
+    soundOn = !soundOn;
+    muteBtn.textContent = soundOn ? "Sound: ON" : "Sound: OFF";
+  });
+
+  intervalSel.addEventListener("change", () => {
+    updateUI();
+    scheduleNextAlert();
+  });
+
+  // ---------- START ----------
+  updateUI();
+  setInterval(updateUI, 250);
+</script>
+</body>
+</html>
