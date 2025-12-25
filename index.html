@@ -252,7 +252,7 @@
                 </select>
             </div>
             <p style="font-size: 0.8rem; color: #64748b; margin-top: 1rem;">
-                *Times are automatically converted to your local timezone (e.g., IST, EST).
+                *Times are automatically converted to your local timezone.
             </p>
         </div>
 
@@ -336,12 +336,24 @@
             }
         }
 
-        // Toggle Sound
+        function sendSystemNotification(title, body) {
+            if (!soundEnabled) return; // Only send if alerts are enabled
+            if (Notification.permission === "granted") {
+                new Notification(title, { body: body, icon: '' });
+            }
+        }
+
+        // Toggle Sound & Permissions
         soundBtn.addEventListener('click', () => {
             soundEnabled = !soundEnabled;
             // Try to resume audio context immediately on user gesture
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
+            // Request Notification Permission
+            if (soundEnabled && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+
             soundBtn.textContent = soundEnabled ? "🔊 Alerts On" : "🔔 Enable Alerts";
             soundBtn.classList.toggle('secondary', !soundEnabled);
             
@@ -363,10 +375,7 @@
         function getNextDropTime() {
             const now = new Date();
             
-            // LOGIC UPDATE: Use UTC (Server Time) to align drops.
-            // This ensures that for offset timezones (like India +5:30), the :30 is handled automatically.
-            
-            // Create a date object for calculation, starting at "now"
+            // LOGIC: Use UTC (Server Time) to align drops.
             let d = new Date(now);
             
             // 1. Reset minutes/seconds/ms to the top of the hour (UTC)
@@ -375,7 +384,6 @@
             d.setUTCMilliseconds(0);
             
             // 2. Align to interval (e.g. if interval is 2, ensure we are on even UTC hours)
-            // This aligns to 0, 2, 4, 6... UTC.
             let remainder = d.getUTCHours() % intervalHours;
             d.setUTCHours(d.getUTCHours() - remainder);
             
@@ -393,7 +401,6 @@
             const diff = target - now;
 
             // Update Next Drop Time Text
-            // This automatically converts the UTC calculated target to the USER'S browser timezone
             const timeOptions = { hour: 'numeric', minute: '2-digit' };
             dropTimeEl.textContent = target.toLocaleTimeString([], timeOptions);
 
@@ -408,35 +415,29 @@
             
             // --- ALERT LOGIC ---
             
-            // 1. Warning: 3 minutes before (diff is between 3m and 2m59s)
-            // 'minutes' variable holds the remaining minutes. 
-            // So if minutes is 3, time is between 3:00 and 3:59? No, diff calculation floor logic:
-            // 180,000ms = 3 minutes exactly.
-            // 179,999ms = 2 minutes, 59 seconds.
-            
-            // We want to trigger AS SOON as it hits 3:00 remaining or slightly under.
-            // Let's use raw 'diff' for precision.
-            
-            // Trigger range: Between 2:58 and 3:02 remaining to ensure we catch it
             const threeMinMs = 3 * 60 * 1000;
             
-            if (diff <= threeMinMs && diff > (threeMinMs - 2000)) { 
-                // 2 second window to trigger alert
+            // 1. Warning Alert Logic
+            // WIDENED WINDOW: Checks if time is between 3 mins and 2 mins.
+            // This handles "Browser Throttling" where the timer might lag by a few seconds.
+            if (diff <= threeMinMs && diff > (threeMinMs - 60000)) { 
                  if (!warningTriggered) {
                      showBanner("⚠️ GET READY! Drop in 3 minutes! Log in now!", "warning");
                      playBeep('warning');
+                     sendSystemNotification("Blox Fruit Alert", "⚠️ 3 Minutes until Fruit Drop! Log in now!");
                      warningTriggered = true;
                  }
             } else {
                 // Reset trigger if we are far away (e.g. more than 4 mins)
-                if (diff > (threeMinMs + 5000)) warningTriggered = false; 
+                if (diff > (threeMinMs + 60000)) warningTriggered = false; 
             }
 
-            // 2. Drop Now (When hours=0, mins=0, secs=0)
+            // 2. Drop Now Logic
             if (diff <= 1000 && diff >= 0) {
                 if (!dropTriggered) {
                     showBanner("🎁 FRUIT DROPPING NOW! GO GO GO!", "alert");
                     playBeep('drop');
+                    sendSystemNotification("Blox Fruit Alert", "🎁 Fruit Dropping NOW!");
                     dropTriggered = true;
                 }
             } else {
