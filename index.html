@@ -252,7 +252,8 @@
                 </select>
             </div>
             <p style="font-size: 0.8rem; color: #64748b; margin-top: 1rem;">
-                *Times are automatically converted to your local timezone.
+                *Times are automatically converted to your local timezone.<br>
+                *Keep this tab open (background is okay) to receive alerts.
             </p>
         </div>
 
@@ -346,21 +347,38 @@
         // Toggle Sound & Permissions
         soundBtn.addEventListener('click', () => {
             soundEnabled = !soundEnabled;
-            // Try to resume audio context immediately on user gesture
-            if (audioCtx.state === 'suspended') audioCtx.resume();
             
-            // Request Notification Permission
-            if (soundEnabled && Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
+            // 1. Resume Audio Context (Browser Policy)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            if (soundEnabled) {
+                // 2. Handle Notifications
+                if (!("Notification" in window)) {
+                    alert("This browser does not support desktop notifications");
+                }
+                else if (Notification.permission === "granted") {
+                    // Already granted - send a test
+                    new Notification("Blox Fruit Alert", { body: "Notifications are working!" });
+                }
+                else if (Notification.permission !== "denied") {
+                    // Request permission
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification("Blox Fruit Alert", { body: "Notifications enabled!" });
+                        }
+                    });
+                }
+                else {
+                    // Denied
+                    alert("Notifications are blocked! Please enable them in your browser address bar.");
+                }
+
+                // 3. Test Sound
+                playBeep('warning');
             }
 
             soundBtn.textContent = soundEnabled ? "🔊 Alerts On" : "🔔 Enable Alerts";
             soundBtn.classList.toggle('secondary', !soundEnabled);
-            
-            if(soundEnabled) {
-                // Test sound
-                playBeep('warning');
-            }
         });
 
         // Change Interval
